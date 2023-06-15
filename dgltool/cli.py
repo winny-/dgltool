@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 import click
 import tomlkit
-
-# import xdg_base_dirs
+import shutil
+import time
 import os
 from pathlib import Path
 
@@ -22,6 +22,25 @@ class Context:
     cfg_path: str | None
 
 
+def account_to_str(account, use_aliases=True):
+    """Pretty string representing an account dictionary."""
+    dgl_user = account['dgl']['user']
+    ssh_user = account['ssh']['user']
+    ssh_host = account['ssh']['host']
+    ssh_port = account['ssh']['port']
+    aliases = account['aliases']
+
+    ssh_info = f'{ssh_user}@{ssh_host}'
+    if ssh_port != 22:
+        ssh_info += f':{ssh_port}'
+    cleaned_aliases = ''
+    s = ''
+    if use_aliases:
+        cleaned_aliases = ','.join(alias for alias in aliases)
+        s = f'{cleaned_aliases} :: '
+    return f'{s}{dgl_user} at {ssh_info}'
+
+
 @click.group()
 @click.option('-c', '--config-path')
 @click.pass_context
@@ -34,19 +53,7 @@ def main(ctx, config_path):
 @click.pass_context
 def list(ctx):
     for a in ctx.obj.cfg['account']:
-        dgl_user = a['dgl']['user']
-        ssh_user = a['ssh']['user']
-        ssh_host = a['ssh']['host']
-        ssh_port = a['ssh']['port']
-        aliases = a['aliases']
-
-        ssh_info = f'{ssh_user}@{ssh_host}'
-        if ssh_port != 22:
-            ssh_info += f':{ssh_port}'
-        cleaned_aliases = ''
-        if aliases:
-            cleaned_aliases = ','.join(alias for alias in aliases)
-        click.echo(f'{cleaned_aliases} :: {dgl_user} at {ssh_info}')
+        click.echo(account_to_str(a))
 
 
 @main.command()
@@ -61,6 +68,8 @@ def ssh(ctx, alias):
     if target is None:
         click.echo(f"No account found matching alias \"{alias}\"")
         exit(1)
+    ################################################################
+    set_title(f"{account_to_str(account, use_aliases=False)} :: dgltool")
     dgl_user = account['dgl']['user']
     dgl_password = account['dgl']['password']
     os.environ['DGLAUTH'] = f"{dgl_user}:{dgl_password}"
@@ -72,3 +81,18 @@ def ssh(ctx, alias):
         f"-l{account['ssh']['user']}",
         account['ssh']['host'],
     )
+
+
+@main.command()
+def dimensions():
+    while True:
+        columns, lines = shutil.get_terminal_size()
+        msg = f"{columns}x{lines}"
+        set_title(f"{msg} :: dgltool")
+        click.echo(f"\r{msg}", nl=False)
+        time.sleep(1)
+
+
+def set_title(s: str) -> None:
+    """Set terminal title to s."""
+    click.echo(f'\33]0;{s}\a', nl=False)
