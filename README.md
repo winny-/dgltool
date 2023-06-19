@@ -9,11 +9,12 @@ Launch][dgl] instances with a single command.
 ## Features
 
 - A configuration file to describe SSH and `DGLAUTH` environment settings.
-- Simple full-match aliases to connect to an account.
+- Simple full-match aliases to connect to an account. `dgltool ssh youralias`
+- Backup hardfought.org account data via `dgltool rc backup youralias`
 
 ## Wishlist
 
-- Commands to back up and restore configs
+- Commands to back up and restore configs (wip - see `dgltool rc backup`)
 - Option to run game session in tmux session
 - Or some other way to introduce game macros or scripting.
 
@@ -29,6 +30,8 @@ dgl.password = "Your DGL password"
 ssh.user = "nethack"  # SSH user
 ssh.host = "hardfought.org"  # SSH Server
 ```
+
+See also [`sample-dgltool.toml`](sample-dgltool.toml).
 
 ## FIXME
 
@@ -49,7 +52,7 @@ error: builder for '/nix/store/jvcidwk9kpka52cwcqpfjaim0kh8a64p-python3.10-xdg-b
 error: 1 dependencies of derivation '/nix/store/cy2x3wkc7yqnmmz5nfhwqgbw3b2w21x2-python3.10-dgltool-0.0.1.drv' failed to build
 ```
 
-(Hence this tool doesn't pull in xdg_base_dirs...)
+(Hence this tool doesn't pull in `xdg-base-dirs`...)
 
 ## License
 

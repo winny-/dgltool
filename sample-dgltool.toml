@@ -1,0 +1,12 @@
+# Sample dgltool.toml
+
+# Here is the minimum needed to add an account.
+[[account]]
+aliases = ["squarerobin"]
+[account.ssh]
+host = "alt.org"
+user = "nethack"
+port = 22
+[account.dgl]
+user = "squarerobin"
+password = "robin"

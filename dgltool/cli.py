@@ -1,10 +1,13 @@
+"""dgltool's command line interface.  Written in click."""
+
+
 from dataclasses import dataclass
 import click
 import tomlkit
 import shutil
 import time
 import os
-from . import util
+from . import util, rc
 from pathlib import Path
 
 
@@ -93,12 +96,8 @@ def help(ctx):
 @click.pass_context
 def ssh(ctx, alias):
     """Connect to an account using its ALIAS."""
-    target = None
-    for account in ctx.obj.cfg['account']:
-        if alias in account['aliases']:
-            target = account
-            break
-    if target is None:
+    account = util.get_account(ctx.obj.cfg, alias)
+    if account is None:
         click.echo(f"No account found matching alias \"{alias}\"")
         exit(1)
     ################################################################
@@ -125,3 +124,22 @@ def dimensions():
         util.set_title(f"{msg} :: dgltool")
         click.echo(f"\r{msg}", nl=False)
         time.sleep(1)
+
+
+@main.group(name='rc')
+def rc_group():
+    """Manipulate nhrc files."""
+    pass
+
+
+@rc_group.command()
+@click.argument('alias', type=AliasParamType())
+@click.option('--directory', '-d', type=click.Path(), default='./')
+@click.pass_context
+def backup(ctx, alias, directory):
+    """
+    Back up DGL hosted player data to directory.
+
+    Works with hardfought.org hosts.
+    """
+    rc.backup_hardfought(util.get_account(ctx.obj.cfg, alias), directory)
