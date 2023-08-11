@@ -13,6 +13,12 @@
 
         customOverrides = self: super: {
           # Overrides go here
+          bs4 = super.bs4.overridePythonAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ self.setuptools ];
+          });
+          requests-html = super.requests-html.overridePythonAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ self.setuptools ];
+          });
         };
 
         app = pkgs.poetry2nix.mkPoetryApplication {
