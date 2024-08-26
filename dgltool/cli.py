@@ -3,12 +3,11 @@
 
 from dataclasses import dataclass
 import click
-import tomlkit
 import shutil
 import time
 import os
-from . import util, rc
-from pathlib import Path
+import tomlkit
+from . import util, rc, config, logger
 
 
 class AliasParamType(click.ParamType):
@@ -24,54 +23,23 @@ class AliasParamType(click.ParamType):
         ]
 
 
-def read_config(config_path=None):
-    """Read TOML config.
-
-    config_path defaults to ~/.config/dgltool/dgltool.toml
-    """
-    if config_path is None:
-        config_dir = Path('~/.config/dgltool').expanduser()
-        os.makedirs(config_dir, mode=0o700, exist_ok=True)
-        config_path = config_dir / 'dgltool.toml'
-    Path(config_path).touch()  # Ensure it exists.
-    with open(config_path, 'r') as f:
-        return tomlkit.load(f)
-
-
 @dataclass
 class Context:
     cfg: tomlkit.TOMLDocument | None
     cfg_path: str | None
 
 
-def account_to_str(account, use_aliases=True):
-    """Pretty string representing an account dictionary."""
-    dgl_user = account['dgl']['user']
-    ssh_user = account['ssh']['user']
-    ssh_host = account['ssh']['host']
-    ssh_port = account['ssh']['port']
-    aliases = account['aliases']
-
-    ssh_info = f'{ssh_user}@{ssh_host}'
-    if ssh_port != 22:
-        ssh_info += f':{ssh_port}'
-    cleaned_aliases = ''
-    s = ''
-    if use_aliases:
-        cleaned_aliases = ','.join(alias for alias in aliases)
-        s = f'{cleaned_aliases} :: '
-    return f'{s}{dgl_user} at {ssh_info}'
-
-
 @click.group()
 @click.option('-c', '--config-path', type=click.Path())
+@click.option('-v', '--verbose', count=True)
 @click.pass_context
-def main(ctx, config_path):
+def main(ctx, config_path, verbose):
     """Dungeon Game Launcher tool
 
     Client ard player QoL thingy.
     """
-    cfg = read_config(config_path)
+    logger.configure(verbose)
+    cfg = config.read_config(config_path)
     ctx.obj = Context(cfg=cfg, cfg_path=config_path)
 
 
@@ -80,7 +48,7 @@ def main(ctx, config_path):
 def list(ctx):
     """List all configured accounts."""
     for a in ctx.obj.cfg['account']:
-        click.echo(account_to_str(a))
+        click.echo(config.account_to_str(a))
 
 
 @main.command()
@@ -109,7 +77,7 @@ def ssh(ctx, alias):
         "ssh",
         "ssh",
         "-oSendEnv=DGLAUTH",
-        f"-p{account['ssh'].get('port', 22)}",
+        f"-p{account['ssh']['port']}",
         f"-l{account['ssh']['user']}",
         account['ssh']['host'],
     )
@@ -118,12 +86,15 @@ def ssh(ctx, alias):
 @main.command()
 def dimensions():
     """Echo terminal dimensions until user issues an interrupt (^C)."""
-    while True:
-        columns, lines = shutil.get_terminal_size()
-        msg = f"{columns}x{lines}"
-        util.set_title(f"{msg} :: dgltool")
-        click.echo(f"\r{msg}", nl=False)
-        time.sleep(1)
+    try:
+        while True:
+            columns, lines = shutil.get_terminal_size()
+            msg = f"{columns}x{lines}"
+            util.set_title(f"{msg} :: dgltool")
+            click.echo(f"\r{msg}", nl=False)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        click.echo()
 
 
 @main.group(name='rc')
@@ -142,4 +113,4 @@ def backup(ctx, alias, directory):
 
     Works with hardfought.org hosts.
     """
-    rc.backup_hardfought(util.get_account(ctx.obj.cfg, alias), directory)
+    rc.backup_userdata(util.get_account(ctx.obj.cfg, alias), directory)
