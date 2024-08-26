@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 
-def read_config(config_path=None):
+def read(config_path=None):
     """Read TOML config.
 
     config_path defaults to ~/.config/dgltool/dgltool.toml
@@ -22,6 +22,7 @@ def clean(cfg):
 
     Ensure default field values are initialized.  Look for schema errors.
     """
+
     def validate_keys(what, D, required=None, optional=None):
         if required is None:
             required = frozenset()
@@ -31,9 +32,13 @@ def clean(cfg):
             raise ValueError(f'{what}: Unknown key(s): {", ".join(unknown)}')
         if wanted := required - D.keys():
             raise ValueError(f'{what}: Need key(s): {", ".join(wanted)}')
+
     def validate_type(what, v, type_):
         if not isinstance(v, type_):
-            raise ValueError(f'{what}: expected type {type_} but got {type(v)}')
+            raise ValueError(
+                f'{what}: expected type {type_} but got {type(v)}'
+            )
+
     validate_keys('top level', cfg, optional={'default', 'account'})
     default_user = None
     if 'default' in cfg:
@@ -44,21 +49,34 @@ def clean(cfg):
                 default_user = dgl['user']
                 validate_type('[default] dgl.user', default_user, str)
     for account in cfg.get('account', {}):
-        validate_keys('[[account]]', account, required={'aliases', 'dgl', 'ssh'})
+        validate_keys(
+            '[[account]]', account, required={'aliases', 'dgl', 'ssh'}
+        )
         dgl = account['dgl']
-        validate_keys('[[account]] dgl', dgl,
-                      required={'password'} | (frozenset() if default_user else {'user'}),
-                      optional={'user'} if default_user else frozenset())
+        validate_keys(
+            '[[account]] dgl',
+            dgl,
+            required={'password'}
+            | (frozenset() if default_user else {'user'}),
+            optional={'user'} if default_user else frozenset(),
+        )
         if 'user' not in dgl:
             if default_user:
                 dgl['user'] = default_user
             else:
-                raise ValueError('[[account]]: missing dgl.user (OR [default] dgl.user)')
+                raise ValueError(
+                    '[[account]]: missing dgl.user (OR [default] dgl.user)'
+                )
         else:
             validate_type('[[account]] dgl.user', dgl['user'], str)
         validate_type('[[account]] dgl.password', dgl['password'], str)
         ssh = account['ssh']
-        validate_keys('[[account]] ssh', ssh, required={'host'}, optional={'user', 'port'})
+        validate_keys(
+            '[[account]] ssh',
+            ssh,
+            required={'host'},
+            optional={'user', 'port'},
+        )
         if 'user' not in ssh:
             ssh['user'] = 'nethack'
         else:
@@ -69,22 +87,3 @@ def clean(cfg):
         else:
             validate_type('[[account]] ssh.port', ssh['port'], int)
     return cfg
-
-
-def account_to_str(account, use_aliases=True):
-    """Pretty string representing an account dictionary."""
-    dgl_user = account['dgl']['user']
-    ssh_user = account['ssh']['user']
-    ssh_host = account['ssh']['host']
-    ssh_port = account['ssh']['port']
-    aliases = account['aliases']
-
-    ssh_info = f'{ssh_user}@{ssh_host}'
-    if ssh_port != 22:
-        ssh_info += f':{ssh_port}'
-    cleaned_aliases = ''
-    s = ''
-    if use_aliases:
-        cleaned_aliases = ','.join(alias for alias in aliases)
-        s = f'{cleaned_aliases} :: '
-    return f'{s}{dgl_user} at {ssh_info}'

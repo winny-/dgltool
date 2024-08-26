@@ -27,3 +27,22 @@ def get_account(cfg, alias):
         if alias in account['aliases']:
             return account
     raise NoSuchAccountError(alias)
+
+
+def account_to_str(account, use_aliases=True):
+    """Pretty string representing an account dictionary."""
+    dgl_user = account['dgl']['user']
+    ssh_user = account['ssh']['user']
+    ssh_host = account['ssh']['host']
+    ssh_port = account['ssh']['port']
+    aliases = account['aliases']
+
+    ssh_info = f'{ssh_user}@{ssh_host}'
+    if ssh_port != 22:
+        ssh_info += f':{ssh_port}'
+    cleaned_aliases = ''
+    s = ''
+    if use_aliases:
+        cleaned_aliases = ','.join(alias for alias in aliases)
+        s = f'{cleaned_aliases} :: '
+    return f'{s}{dgl_user} at {ssh_info}'

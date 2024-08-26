@@ -1,6 +1,5 @@
 """dgltool's command line interface.  Written in click."""
 
-
 from dataclasses import dataclass
 import click
 import shutil
@@ -15,7 +14,7 @@ class AliasParamType(click.ParamType):
 
     def shell_complete(self, ctx, param, incomplete):
         # The aliases should be deduplicated, in lexicographical order.
-        aliases = sorted(set(util.all_aliases(read_config())))
+        aliases = sorted(set(util.all_aliases(config.read(ctx.cfg_path))))
         return [
             click.shell_completion.CompletionItem(alias)
             for alias in aliases
@@ -39,7 +38,7 @@ def main(ctx, config_path, verbose):
     Client ard player QoL thingy.
     """
     logger.configure(verbose)
-    cfg = config.read_config(config_path)
+    cfg = config.read(config_path)
     ctx.obj = Context(cfg=cfg, cfg_path=config_path)
 
 
@@ -48,7 +47,7 @@ def main(ctx, config_path, verbose):
 def list(ctx):
     """List all configured accounts."""
     for a in ctx.obj.cfg['account']:
-        click.echo(config.account_to_str(a))
+        click.echo(util.account_to_str(a))
 
 
 @main.command()
@@ -69,7 +68,9 @@ def ssh(ctx, alias):
         click.echo(f"No account found matching alias \"{alias}\"")
         exit(1)
     ################################################################
-    util.set_title(f"{account_to_str(account, use_aliases=False)} :: dgltool")
+    util.set_title(
+        f"{util.account_to_str(account, use_aliases=False)} :: dgltool"
+    )
     dgl_user = account['dgl']['user']
     dgl_password = account['dgl']['password']
     os.environ['DGLAUTH'] = f"{dgl_user}:{dgl_password}"

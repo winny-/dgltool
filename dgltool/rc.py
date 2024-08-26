@@ -8,7 +8,6 @@ import os
 from collections import deque
 from pathlib import Path
 from urllib.parse import urlparse
-import click
 import time
 from . import logger
 
@@ -49,7 +48,7 @@ def download_userdata_to_folder(root_url, directory=None):
         if first:
             first = False
         else:
-            time.sleep(.33)  # Pause for 1/3 of a second after each request.
+            time.sleep(0.33)  # Pause for 1/3 of a second after each request.
         url = queue.popleft()
         logger.debug(f'GET {url}')
         path = directory / urlparse(url).path.replace(root_path, '', 1)
@@ -68,4 +67,6 @@ def download_userdata_to_folder(root_url, directory=None):
             for candidate in candidates:
                 if candidate not in visited and candidate not in queue:
                     queue.append(candidate)
-    logger.info(f'Downloaded userdata after {time.time() - start:.1f} seconds.')
+    logger.info(
+        f'Downloaded userdata after {time.time() - start:.1f} seconds.'
+    )
