@@ -5,6 +5,7 @@ import click
 import shutil
 import time
 import os
+import signal
 import tomlkit
 from . import util, rc, config, logger
 
@@ -84,16 +85,30 @@ def ssh(ctx, alias):
     )
 
 
+class Redraw(RuntimeError):
+    pass
+
+
 @main.command()
 def dimensions():
     """Echo terminal dimensions until user issues an interrupt (^C)."""
     try:
+
+        def handler(signum, frame):
+            raise Redraw()
+
+        if os.name == 'posix':
+            signal.signal(signal.SIGWINCH, handler)
         while True:
-            columns, lines = shutil.get_terminal_size()
-            msg = f"{columns}x{lines}"
-            util.set_title(f"{msg} :: dgltool")
-            click.echo(f"\r{msg}", nl=False)
-            time.sleep(1)
+            try:
+                columns, lines = shutil.get_terminal_size()
+                msg = f"{columns}x{lines}"
+                util.set_title(f"{msg} :: dgltool")
+                # https://stackoverflow.com/questions/1508490
+                click.echo(f"\033[2K\r{msg}", nl=False)
+                time.sleep(1)
+            except Redraw:
+                pass
     except KeyboardInterrupt:
         click.echo()
 
