@@ -8,11 +8,11 @@ jobs:
       env:
         PRE_COMMIT_HOME: .pre-commit-cache
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.7
       - name: Allow workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Cache .pre-commit-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4.0.2
         with:
           path: |
             .pre-commit-cache
@@ -30,17 +30,17 @@ jobs:
       #       check-out repo and set-up python
       #----------------------------------------------
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
       - name: Set up python
         id: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.2.0
         with:
           python-version: '3.12'
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@v1.4.1
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
@@ -51,7 +51,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v4.0.2
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
